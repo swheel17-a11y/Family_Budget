@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Family Budget Master</title>
+    <title>Family Budget V3 (Live)</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -21,7 +21,6 @@
         };
 
         firebase.initializeApp(firebaseConfig);
-        // Make database global so the bottom script can see it
         window.database = firebase.database(); 
     </script>
 
@@ -49,6 +48,7 @@
             -webkit-appearance: none; 
             margin: 0; 
         }
+        .progress-bar { transition: width 0.5s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -57,17 +57,27 @@
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-chart-line text-emerald-400"></i> Family Budget
+                    <i class="fas fa-wallet text-emerald-400"></i> Family Budget <span class="text-xs bg-purple-600 px-1 rounded text-white">V3</span>
                 </h1>
-                <p class="text-slate-400 text-xs">Projected vs. Actual</p>
+                <p class="text-slate-400 text-xs">Dynamic Bills & Rollover</p>
             </div>
             <button onclick="resetMonth()" class="text-xs bg-slate-800 hover:bg-red-600 text-white px-3 py-2 rounded transition border border-slate-700">
-                <i class="fas fa-sync-alt mr-1"></i> New Month
+                <i class="fas fa-archive mr-1"></i> Archive
             </button>
         </div>
     </header>
 
     <main class="max-w-4xl mx-auto p-4 space-y-6 mt-2">
+
+        <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-emerald-50 p-3 border-b border-emerald-100 flex justify-between items-center">
+                <h2 class="font-bold text-emerald-800 text-sm"><i class="fas fa-hand-holding-usd mr-2"></i> Starting Cash / Rollover</h2>
+            </div>
+            <div class="p-4 flex items-center gap-3">
+                <input type="number" id="starting-cash" placeholder="Previous Month Leftover" class="border p-2 rounded w-full max-w-xs font-bold text-emerald-700" step="0.01" onchange="saveStartingCash()" />
+                <span class="text-xs text-gray-400">Auto-saves on change</span>
+            </div>
+        </section>
 
         <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-blue-50 p-3 border-b border-blue-100 flex justify-between items-center">
@@ -102,18 +112,18 @@
         </section>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden border-t-4 border-t-emerald-500">
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden border-t-4 border-t-purple-500">
                 <div class="p-3 bg-gray-50 border-b flex justify-between cursor-pointer hover:bg-gray-100" onclick="toggleSection('wife1-body')">
                     <h2 class="font-bold text-gray-800 text-sm">👩 Wife: 1st</h2>
-                    <span class="text-gray-400 text-xs" id="w1-proj-total">$1,731.96 Proj.</span>
+                    <span class="text-gray-400 text-xs" id="w1-proj-total">$0 Proj.</span>
                 </div>
                 <div id="wife1-body" class="p-2 space-y-2"></div>
             </section>
 
-            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden border-t-4 border-t-teal-500">
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden border-t-4 border-t-pink-500">
                 <div class="p-3 bg-gray-50 border-b flex justify-between cursor-pointer hover:bg-gray-100" onclick="toggleSection('wife2-body')">
                     <h2 class="font-bold text-gray-800 text-sm">👩 Wife: 15th</h2>
-                    <span class="text-gray-400 text-xs" id="w2-proj-total">$1,897.00 Proj.</span>
+                    <span class="text-gray-400 text-xs" id="w2-proj-total">$0 Proj.</span>
                 </div>
                 <div id="wife2-body" class="p-2 space-y-2"></div>
             </section>
@@ -167,17 +177,17 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-end mb-2">
                 <h3 class="text-slate-500 font-bold text-xs uppercase tracking-widest">End of Month Reality</h3>
-                <span class="text-xs text-gray-400">Total Income - Actual Spending</span>
+                <span class="text-xs text-gray-400">Income + Rollover - Spending</span>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
                 <div class="bg-slate-50 rounded p-2 border border-slate-200">
-                    <div class="text-[10px] text-slate-500 uppercase font-semibold">Income</div>
+                    <div class="text-[10px] text-slate-500 uppercase font-semibold">Total In</div>
                     <div class="font-bold text-blue-600 text-sm" id="dash-income">$0</div>
                 </div>
                 <div class="bg-slate-50 rounded p-2 border border-slate-200">
-                    <div class="text-[10px] text-slate-500 uppercase font-semibold">Actual Out</div>
+                    <div class="text-[10px] text-slate-500 uppercase font-semibold">Total Out</div>
                     <div class="font-bold text-slate-700 text-sm" id="dash-out">$0</div>
-                    <div class="text-[10px] text-gray-400" id="dash-proj-diff">Proj: $0</div>
+                    <div class="text-[10px] text-gray-400" id="dash-proj-diff">Baseline: $0</div>
                 </div>
                 <div class="bg-slate-50 rounded p-2 border-2 shadow-inner" id="dash-savings-box">
                     <div class="text-[10px] text-slate-500 uppercase font-semibold">Remaining</div>
@@ -188,8 +198,8 @@
     </div>
 
     <script>
-        // --- DATA ---
-        const wifeItems = [
+        // --- DEFAULT BILLS (For seeding new months) ---
+        const defaultWifeBills = [
             // 1st
             { id: 'w1c1', name: 'Spending Cash', amount: 200.00, section: 'wife1-body' },
             { id: 'w1c2', name: 'Shugosha (Wks 1-2)', amount: 200.00, section: 'wife1-body' },
@@ -218,6 +228,8 @@
         ];
 
         let state = {
+            startingCash: 0, 
+            wifeBills: [],   
             checkedStatic: {}, actualAmounts: {}, incomeLog: [], expenseLog: [],
             husbandCycles: [], recurringBills: [], savingsAmount: 0, editingId: null    
         };
@@ -225,10 +237,9 @@
         function init() {
             document.getElementById('inc-date').valueAsDate = new Date();
             document.getElementById('exp-date').valueAsDate = new Date();
-            
-            renderAll();
-            
-            // USE window.database here!
+            renderAll(); 
+
+            // LIVE DATABASE (No _TEST)
             const dbRef = window.database.ref('familyBudgetState');
             
             dbRef.on('value', (snapshot) => {
@@ -242,47 +253,96 @@
                     if (!state.checkedStatic) state.checkedStatic = {};
                     if (!state.actualAmounts) state.actualAmounts = {};
                     if (state.savingsAmount === undefined) state.savingsAmount = 0;
+                    if (state.startingCash === undefined) state.startingCash = 0;
+                    
+                    // --- MIGRATION: UPGRADE OLD DATA TO V3 ---
+                    if (!state.wifeBills || state.wifeBills.length === 0) {
+                        state.wifeBills = defaultWifeBills;
+                        saveState(); 
+                    }
+                    
+                    document.getElementById('starting-cash').value = state.startingCash > 0 ? state.startingCash : '';
                     renderAll();
                 } else {
                     seedInitialData();
                 }
             }, (error) => {
                 console.error("Firebase read error:", error);
-                alert("Database Error: " + error.message + ". Check Console.");
             });
         }
 
         function seedInitialData() {
             state.incomeLog.push({id: 1, date: new Date().toISOString().split('T')[0], desc: "Wife Check 1 (Est)", amount: 2200});
             state.incomeLog.push({id: 2, date: new Date().toISOString().split('T')[0], desc: "Wife Check 2 (Est)", amount: 2200});
+            state.wifeBills = defaultWifeBills; 
             saveState();
         }
 
         function saveState() {
-            // USE window.database here!
+            // LIVE DATABASE (No _TEST)
             window.database.ref('familyBudgetState').set(state)
                 .catch(err => console.error("Save failed", err));
         }
 
-        function renderAll() {
-            renderStaticBills();
-            renderHusbandCycles();
-            renderIncomeLog();
-            renderExpenseLog();
-            calculateSummary();
-            renderRecurringBills();
-            renderSavings();
+        function saveStartingCash() {
+            const val = parseFloat(document.getElementById('starting-cash').value);
+            state.startingCash = isNaN(val) ? 0 : val;
+            saveState();
+        }
+
+        function moveBill(id) {
+            const bill = state.wifeBills.find(b => b.id === id);
+            if (bill) {
+                if (bill.section === 'wife1-body') {
+                    bill.section = 'wife2-body';
+                } else {
+                    bill.section = 'wife1-body';
+                }
+                saveState();
+            }
+        }
+
+        function resetMonth() {
+            const todayStr = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+            const archiveName = prompt("Name this archive before clearing:", todayStr);
+            
+            if (archiveName) {
+                window.database.ref(`history/${archiveName}`).set(state);
+
+                state = { 
+                    startingCash: 0, 
+                    wifeBills: defaultWifeBills, 
+                    checkedStatic: {}, actualAmounts: {}, incomeLog: [], expenseLog: [], 
+                    husbandCycles: [], recurringBills: [], savingsAmount: 0, editingId: null 
+                };
+                
+                state.incomeLog.push({id: 1, date: new Date().toISOString().split('T')[0], desc: "Wife Check 1 (Est)", amount: 2200});
+                state.incomeLog.push({id: 2, date: new Date().toISOString().split('T')[0], desc: "Wife Check 2 (Est)", amount: 2200});
+                
+                saveState();
+                document.getElementById('starting-cash').value = '';
+            }
         }
 
         function renderStaticBills() {
             document.getElementById('wife1-body').innerHTML = '';
             document.getElementById('wife2-body').innerHTML = '';
+            
+            // --- SAFETY NET FOR V3 UPGRADE ---
+            if (!state.wifeBills) return; 
+            // ---------------------------------
 
-            wifeItems.forEach(item => {
+            let total1 = 0;
+            let total2 = 0;
+
+            state.wifeBills.forEach(item => {
                 const isChecked = state.checkedStatic[item.id] || false;
                 const actual = state.actualAmounts[item.id] !== undefined ? state.actualAmounts[item.id] : item.amount;
                 const isEditing = state.editingId === item.id;
                 const diff = item.amount - actual;
+
+                if(item.section === 'wife1-body') total1 += item.amount;
+                if(item.section === 'wife2-body') total2 += item.amount;
 
                 let rightSide = '';
                 if (isEditing) {
@@ -302,11 +362,11 @@
                             <div class="flex items-center justify-end gap-2">
                                 <span class="text-sm ${amountClass}">$${actual.toFixed(2)}</span>
                                 <button onclick="startEdit('${item.id}')" class="text-gray-300 hover:text-blue-500"><i class="fas fa-pen text-xs"></i></button>
+                                <button onclick="moveBill('${item.id}')" class="text-gray-300 hover:text-purple-500 ml-1"><i class="fas fa-exchange-alt text-xs"></i></button>
                             </div>
                             ${diffBadge}
                         </div>`;
                 }
-
                 const html = `
                     <div class="flex items-center justify-between p-2 rounded border border-b ${isChecked ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-gray-100'}">
                         <div class="flex items-center gap-3">
@@ -317,46 +377,42 @@
                     </div>`;
                 document.getElementById(item.section).innerHTML += html;
             });
+            
+            document.getElementById('w1-proj-total').innerText = `$${total1.toFixed(0)} Proj.`;
+            document.getElementById('w2-proj-total').innerText = `$${total2.toFixed(0)} Proj.`;
         }
 
         function renderHusbandCycles() {
             const container = document.getElementById('husband-cycles-container');
             const emptyMsg = document.getElementById('husband-empty-msg');
-            Array.from(container.children).forEach(child => {
-                if (child.id !== 'husband-empty-msg') container.removeChild(child);
-            });
-
+            Array.from(container.children).forEach(child => { if (child.id !== 'husband-empty-msg') container.removeChild(child); });
             if (state.husbandCycles.length === 0) {
                 emptyMsg.style.display = 'block';
             } else {
                 emptyMsg.style.display = 'none';
                 state.husbandCycles.forEach(cycle => {
-                    const cycleTotal = cycle.groceryActual + cycle.gasActual;
-                    const renderRow = (label, keyChecked, keyActual, defaultAmt, keyIdBase) => {
-                        const isEditing = state.editingId === `${cycle.id}-${keyIdBase}`;
-                        const diff = defaultAmt - cycle[keyActual];
-                        if (isEditing) {
-                            return `
-                                <div class="flex justify-between items-center py-1">
-                                    <span class="text-sm text-gray-700">${label}</span>
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" id="edit-${cycle.id}-${keyIdBase}" value="${cycle[keyActual]}" class="border border-blue-400 rounded w-20 px-1 py-1 text-sm text-right">
-                                        <button onclick="saveHusbandEdit(${cycle.id}, '${keyActual}', '${keyIdBase}')" class="bg-blue-600 text-white p-1 rounded w-8 h-8"><i class="fas fa-save"></i></button>
+                    const groceryLimit = 300;
+                    const gasLimit = 120;
+                    if (cycle.grocerySpent === undefined) cycle.grocerySpent = 0;
+                    if (cycle.gasSpent === undefined) cycle.gasSpent = 0;
+                    const renderBar = (label, spent, limit, type) => {
+                        const percent = Math.min((spent / limit) * 100, 100);
+                        let color = "bg-emerald-500";
+                        if(percent > 75) color = "bg-yellow-400";
+                        if(percent >= 100) color = "bg-red-500";
+                        return `
+                            <div class="mb-3">
+                                <div class="flex justify-between items-end mb-1">
+                                    <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">${label}</span>
+                                    <div class="text-xs"><span class="font-bold text-gray-800">$${spent.toFixed(0)}</span> <span class="text-gray-400">/ $${limit}</span></div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                                        <div class="${color} h-3 rounded-full progress-bar shadow-sm" style="width: ${percent}%"></div>
                                     </div>
-                                </div>`;
-                        } else {
-                            return `
-                                <div class="flex justify-between items-center py-1">
-                                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" onchange="toggleHusbandItem(${cycle.id}, '${keyChecked}')" ${cycle[keyChecked] ? 'checked' : ''}>
-                                        <span class="${cycle[keyChecked] ? 'strikethrough text-gray-400' : ''}">${label}</span>
-                                    </label>
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-gray-600 text-sm">$${cycle[keyActual]}</span>
-                                        <button onclick="startEdit('${cycle.id}-${keyIdBase}')" class="text-gray-300 hover:text-blue-500 text-xs"><i class="fas fa-pen"></i></button>
-                                    </div>
-                                </div>`;
-                        }
+                                    <button onclick="addToCycle(${cycle.id}, '${type}')" class="bg-indigo-600 hover:bg-indigo-700 text-white w-6 h-6 rounded flex items-center justify-center shadow"><i class="fas fa-plus text-[10px]"></i></button>
+                                </div>
+                            </div>`;
                     };
                     const card = document.createElement('div');
                     card.className = "bg-white border border-indigo-200 rounded-lg p-3 shadow-sm relative";
@@ -366,247 +422,58 @@
                             <button onclick="deleteHusbandCycle(${cycle.id})" class="text-gray-300 hover:text-red-500 text-xs"><i class="fas fa-trash"></i></button>
                         </div>
                         <div class="space-y-1">
-                            ${renderRow('Groceries', 'groceriesChecked', 'groceryActual', 300, 'groc')}
-                            ${renderRow('Gas', 'gasChecked', 'gasActual', 120, 'gas')}
+                            ${renderBar('Groceries', cycle.grocerySpent, groceryLimit, 'grocery')}
+                            ${renderBar('Gas', cycle.gasSpent, gasLimit, 'gas')}
                         </div>
                         <div class="mt-2 pt-2 border-t border-indigo-50 flex justify-between items-center">
-                            <span class="text-xs text-indigo-300">Default: $420</span>
-                            <span class="text-xs text-indigo-600 font-bold">Actual Total: $${cycleTotal.toFixed(2)}</span>
+                            <span class="text-xs text-indigo-300">Remaining: $${((groceryLimit + gasLimit) - (cycle.grocerySpent + cycle.gasSpent)).toFixed(2)}</span>
                         </div>`;
                     container.appendChild(card);
                 });
             }
         }
-
-        function renderIncomeLog() {
-            const list = document.getElementById('income-list');
-            list.innerHTML = '';
-            let total = 0;
-            state.incomeLog.forEach(item => {
-                total += parseFloat(item.amount);
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-blue-50 p-2 rounded border border-blue-100';
-                div.innerHTML = `
-                    <div><span class="font-bold text-blue-900">${item.desc}</span> <span class="text-xs text-blue-400 ml-2">${item.date}</span></div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-bold text-blue-700">+$${parseFloat(item.amount).toFixed(2)}</span>
-                        <button onclick="removeIncome(${item.id})" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                    </div>`;
-                list.appendChild(div);
-            });
-            document.getElementById('total-income-display').innerText = `$${total.toFixed(2)}`;
-        }
-
-        function renderExpenseLog() {
-            const list = document.getElementById('expense-list');
-            list.innerHTML = '';
-            let total = 0;
-            state.expenseLog.forEach(item => {
-                total += parseFloat(item.amount);
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-red-50 p-2 rounded border border-red-100';
-                div.innerHTML = `
-                    <div><span class="font-bold text-red-900">${item.desc}</span> <span class="text-xs text-red-400 ml-2">${item.date}</span></div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-bold text-red-700">-$${parseFloat(item.amount).toFixed(2)}</span>
-                        <button onclick="removeExpense(${item.id})" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                    </div>`;
-                list.appendChild(div);
-            });
-            document.getElementById('total-extra-display').innerText = `$${total.toFixed(2)}`;
-        }
-
-        function renderRecurringBills() {
-            const container = document.getElementById('recurring-bills-list');
-            container.innerHTML = '';
-            if (state.recurringBills.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-xs italic">Add recurring bills here.</p>';
-                return;
-            }
-            state.recurringBills.forEach(bill => {
-                const html = `
-                    <div class="flex justify-between items-center p-2 rounded border border-yellow-200 bg-yellow-50">
-                        <span class="font-medium text-yellow-800">${bill.name}:</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold text-yellow-700">$${parseFloat(bill.amount).toFixed(2)}</span>
-                            <button onclick="editRecurringBill(${bill.id})" class="text-yellow-500 hover:text-yellow-700 text-xs"><i class="fas fa-pen"></i></button>
-                            <button onclick="removeRecurringBill(${bill.id})" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>`;
-                container.innerHTML += html;
-            });
-        }
-
-        function addRecurringBill() {
-            const name = prompt("Enter bill name:");
-            if (!name) return;
-            const amountStr = prompt("Enter monthly amount:");
-            if (!amountStr) return;
+        function addToCycle(id, type) {
+            const amountStr = prompt(`Add amount spent on ${type}:`);
+            if(!amountStr) return;
             const amount = parseFloat(amountStr);
-            if (isNaN(amount) || amount < 0) return alert("Invalid amount.");
-            const id = Date.now();
-            state.recurringBills.push({id, name, amount});
-            saveState();
-        }
-
-        function editRecurringBill(id) {
-            const bill = state.recurringBills.find(b => b.id === id);
-            if (!bill) return;
-            const newName = prompt("Edit bill name:", bill.name);
-            if (!newName) return;
-            const newAmountStr = prompt("Edit monthly amount:", bill.amount);
-            if (!newAmountStr) return;
-            const newAmount = parseFloat(newAmountStr);
-            if (isNaN(newAmount) || newAmount < 0) return alert("Invalid amount.");
-            bill.name = newName;
-            bill.amount = newAmount;
-            saveState();
-        }
-
-        function removeRecurringBill(id) {
-            if (confirm("Remove this recurring bill?")) {
-                state.recurringBills = state.recurringBills.filter(b => b.id !== id);
-                saveState();
-            }
-        }
-
-        function saveSavings() {
-            const input = document.getElementById('savings-amount');
-            const val = parseFloat(input.value);
-            if (isNaN(val) || val < 0) return alert("Enter a valid savings amount.");
-            state.savingsAmount = val;
-            saveState();
-            input.value = '';
-        }
-
-        function renderSavings() {
-            document.getElementById('savings-display').innerText = `$${state.savingsAmount.toFixed(2)}`;
-        }
-
-        function startEdit(id) {
-            state.editingId = id;
-            renderAll();
-        }
-
-        function saveEdit(id) {
-            const input = document.getElementById(`edit-${id}`);
-            const val = parseFloat(input.value);
-            if (!isNaN(val)) state.actualAmounts[id] = val;
-            state.editingId = null;
-            saveState();
-        }
-
-        function saveHusbandEdit(cycleId, keyActual, keyIdBase) {
-            const input = document.getElementById(`edit-${cycleId}-${keyIdBase}`);
-            const val = parseFloat(input.value);
-            const cycle = state.husbandCycles.find(c => c.id === cycleId);
-            if (cycle && !isNaN(val)) cycle[keyActual] = val;
-            state.editingId = null;
-            saveState();
-        }
-
-        function toggleStatic(id) {
-            state.checkedStatic[id] = !state.checkedStatic[id];
-            saveState();
-        }
-
-        function addHusbandCycle() {
-            const today = new Date().toISOString().split('T')[0];
-            state.husbandCycles.push({
-                id: Date.now(), date: today,
-                groceriesChecked: false, gasChecked: false,
-                groceryActual: 300, gasActual: 120
-            });
-            saveState();
-        }
-
-        function deleteHusbandCycle(id) {
-            if(confirm("Remove this pay cycle?")) {
-                state.husbandCycles = state.husbandCycles.filter(c => c.id !== id);
-                saveState();
-            }
-        }
-
-        function toggleHusbandItem(cycleId, field) {
-            const cycle = state.husbandCycles.find(c => c.id === cycleId);
+            if(isNaN(amount)) return alert("Invalid amount");
+            const cycle = state.husbandCycles.find(c => c.id === id);
             if(cycle) {
-                cycle[field] = !cycle[field];
+                if(type === 'grocery') cycle.grocerySpent += amount;
+                if(type === 'gas') cycle.gasSpent += amount;
                 saveState();
             }
         }
-
-        function addIncome() {
-            const d = document.getElementById('inc-date').value;
-            const desc = document.getElementById('inc-desc').value;
-            const amt = document.getElementById('inc-amount').value;
-            if(!desc || !amt) return;
-            state.incomeLog.push({id: Date.now(), date: d, desc: desc, amount: parseFloat(amt)});
-            document.getElementById('inc-desc').value = '';
-            document.getElementById('inc-amount').value = '';
-            saveState();
-        }
-
-        function removeIncome(id) {
-            state.incomeLog = state.incomeLog.filter(i => i.id !== id);
-            saveState();
-        }
-
-        function addExtraExpense() {
-            const d = document.getElementById('exp-date').value;
-            const desc = document.getElementById('exp-desc').value;
-            const amt = document.getElementById('exp-amount').value;
-            if(!desc || !amt) return;
-            state.expenseLog.push({id: Date.now(), date: d, desc: desc, amount: parseFloat(amt)});
-            document.getElementById('exp-desc').value = '';
-            document.getElementById('exp-amount').value = '';
-            saveState();
-        }
-
-        function removeExpense(id) {
-            state.expenseLog = state.expenseLog.filter(i => i.id !== id);
-            saveState();
-        }
-
-        function resetMonth() {
-            if(confirm("Start a new month? This clears everything from the Cloud.")) {
-                state = { checkedStatic: {}, actualAmounts: {}, incomeLog: [], expenseLog: [], husbandCycles: [], recurringBills: [], savingsAmount: 0, editingId: null };
-                state.incomeLog.push({id: 1, date: new Date().toISOString().split('T')[0], desc: "Wife Check 1 (Est)", amount: 2200});
-                state.incomeLog.push({id: 2, date: new Date().toISOString().split('T')[0], desc: "Wife Check 2 (Est)", amount: 2200});
-                saveState();
-            }
-        }
-
-        function toggleSection(id) {
-            document.getElementById(id).classList.toggle('hidden');
-        }
-
         function calculateSummary() {
-            const totalIncome = state.incomeLog.reduce((s, i) => s + i.amount, 0);
+            const totalIncome = state.incomeLog.reduce((s, i) => s + i.amount, 0) + (state.startingCash || 0);
+            
             let fixedActualTotal = 0;
             let fixedProjTotal = 0;
-            wifeItems.forEach(item => {
-                fixedProjTotal += item.amount;
-                const act = state.actualAmounts[item.id] !== undefined ? state.actualAmounts[item.id] : item.amount;
-                fixedActualTotal += act;
-            });
+            if(state.wifeBills) {
+                state.wifeBills.forEach(item => { 
+                    fixedProjTotal += item.amount;
+                    const act = state.actualAmounts[item.id] !== undefined ? state.actualAmounts[item.id] : item.amount;
+                    fixedActualTotal += act;
+                });
+            }
             let husbActualTotal = 0;
             let husbProjTotal = 0;
             state.husbandCycles.forEach(cycle => {
                 husbProjTotal += 420;
-                husbActualTotal += (cycle.groceryActual + cycle.gasActual);
+                husbActualTotal += ((cycle.grocerySpent || 0) + (cycle.gasSpent || 0));
             });
             let recurringTotal = 0;
             state.recurringBills.forEach(bill => recurringTotal += bill.amount);
             const extraTotal = state.expenseLog.reduce((s, i) => s + i.amount, 0);
             const totalOutActual = fixedActualTotal + husbActualTotal + extraTotal + recurringTotal;
             const remaining = totalIncome - totalOutActual - (state.savingsAmount || 0);
-
             const savEl = document.getElementById('dash-savings');
             const savBox = document.getElementById('dash-savings-box');
+            
             document.getElementById('dash-income').innerText = `$${totalIncome.toFixed(0)}`;
             document.getElementById('dash-out').innerText = `$${totalOutActual.toFixed(0)}`;
-            document.getElementById('dash-proj-diff').innerText = `Baseline + Recurring: $${(fixedProjTotal + husbProjTotal + recurringTotal + extraTotal).toFixed(0)}`;
-
+            document.getElementById('dash-proj-diff').innerText = `Baseline: $${(fixedProjTotal + husbProjTotal + recurringTotal + extraTotal).toFixed(0)}`;
+            
             savEl.innerText = `$${remaining.toFixed(2)}`;
             if (remaining >= 0) {
                 savEl.className = "font-extrabold text-lg text-emerald-600";
@@ -616,6 +483,67 @@
                 savBox.className = "bg-red-50 rounded p-2 border-2 border-red-300 shadow-inner";
             }
         }
+        function renderAll() {
+            renderStaticBills();
+            renderHusbandCycles();
+            renderIncomeLog();
+            renderExpenseLog();
+            calculateSummary();
+            renderRecurringBills();
+            renderSavings();
+        }
+        function renderIncomeLog() {
+            const list = document.getElementById('income-list');
+            list.innerHTML = '';
+            let total = 0;
+            state.incomeLog.forEach(item => {
+                total += parseFloat(item.amount);
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center bg-blue-50 p-2 rounded border border-blue-100';
+                div.innerHTML = `<div><span class="font-bold text-blue-900">${item.desc}</span> <span class="text-xs text-blue-400 ml-2">${item.date}</span></div>
+                    <div class="flex items-center gap-3"><span class="font-bold text-blue-700">+$${parseFloat(item.amount).toFixed(2)}</span><button onclick="removeIncome(${item.id})" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+                list.appendChild(div);
+            });
+            document.getElementById('total-income-display').innerText = `$${total.toFixed(2)}`;
+        }
+        function renderExpenseLog() {
+            const list = document.getElementById('expense-list');
+            list.innerHTML = '';
+            let total = 0;
+            state.expenseLog.forEach(item => {
+                total += parseFloat(item.amount);
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center bg-red-50 p-2 rounded border border-red-100';
+                div.innerHTML = `<div><span class="font-bold text-red-900">${item.desc}</span> <span class="text-xs text-red-400 ml-2">${item.date}</span></div>
+                    <div class="flex items-center gap-3"><span class="font-bold text-red-700">-$${parseFloat(item.amount).toFixed(2)}</span><button onclick="removeExpense(${item.id})" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button></div>`;
+                list.appendChild(div);
+            });
+            document.getElementById('total-extra-display').innerText = `$${total.toFixed(2)}`;
+        }
+        function renderRecurringBills() {
+            const container = document.getElementById('recurring-bills-list');
+            container.innerHTML = '';
+            if (state.recurringBills.length === 0) { container.innerHTML = '<p class="text-gray-400 text-xs italic">Add recurring bills here.</p>'; return; }
+            state.recurringBills.forEach(bill => {
+                const html = `<div class="flex justify-between items-center p-2 rounded border border-yellow-200 bg-yellow-50"><span class="font-medium text-yellow-800">${bill.name}:</span><div class="flex items-center gap-3"><span class="font-bold text-yellow-700">$${parseFloat(bill.amount).toFixed(2)}</span><button onclick="editRecurringBill(${bill.id})" class="text-yellow-500 hover:text-yellow-700 text-xs"><i class="fas fa-pen"></i></button><button onclick="removeRecurringBill(${bill.id})" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button></div></div>`;
+                container.innerHTML += html;
+            });
+        }
+        function addRecurringBill() { const name = prompt("Enter bill name:"); if (!name) return; const amountStr = prompt("Enter monthly amount:"); if (!amountStr) return; const amount = parseFloat(amountStr); if (isNaN(amount) || amount < 0) return alert("Invalid amount."); const id = Date.now(); state.recurringBills.push({id, name, amount}); saveState(); }
+        function editRecurringBill(id) { const bill = state.recurringBills.find(b => b.id === id); if (!bill) return; const newName = prompt("Edit bill name:", bill.name); if (!newName) return; const newAmountStr = prompt("Edit monthly amount:", bill.amount); if (!newAmountStr) return; const newAmount = parseFloat(newAmountStr); if (isNaN(newAmount) || newAmount < 0) return alert("Invalid amount."); bill.name = newName; bill.amount = newAmount; saveState(); }
+        function removeRecurringBill(id) { if (confirm("Remove this recurring bill?")) { state.recurringBills = state.recurringBills.filter(b => b.id !== id); saveState(); } }
+        function saveSavings() { const input = document.getElementById('savings-amount'); const val = parseFloat(input.value); if (isNaN(val) || val < 0) return alert("Enter a valid savings amount."); state.savingsAmount = val; saveState(); input.value = ''; }
+        function renderSavings() { document.getElementById('savings-display').innerText = `$${state.savingsAmount.toFixed(2)}`; }
+        function startEdit(id) { state.editingId = id; renderAll(); }
+        function saveEdit(id) { const input = document.getElementById(`edit-${id}`); const val = parseFloat(input.value); if (!isNaN(val)) state.actualAmounts[id] = val; state.editingId = null; saveState(); }
+        function toggleStatic(id) { state.checkedStatic[id] = !state.checkedStatic[id]; saveState(); }
+        function addHusbandCycle() { const today = new Date().toISOString().split('T')[0]; state.husbandCycles.push({ id: Date.now(), date: today, grocerySpent: 0, gasSpent: 0 }); saveState(); }
+        function deleteHusbandCycle(id) { if(confirm("Remove this pay cycle?")) { state.husbandCycles = state.husbandCycles.filter(c => c.id !== id); saveState(); } }
+        function addIncome() { const d = document.getElementById('inc-date').value; const desc = document.getElementById('inc-desc').value; const amt = document.getElementById('inc-amount').value; if(!desc || !amt) return; state.incomeLog.push({id: Date.now(), date: d, desc: desc, amount: parseFloat(amt)}); document.getElementById('inc-desc').value = ''; document.getElementById('inc-amount').value = ''; saveState(); }
+        function removeIncome(id) { state.incomeLog = state.incomeLog.filter(i => i.id !== id); saveState(); }
+        function addExtraExpense() { const d = document.getElementById('exp-date').value; const desc = document.getElementById('exp-desc').value; const amt = document.getElementById('exp-amount').value; if(!desc || !amt) return; state.expenseLog.push({id: Date.now(), date: d, desc: desc, amount: parseFloat(amt)}); document.getElementById('exp-desc').value = ''; document.getElementById('exp-amount').value = ''; saveState(); }
+        function removeExpense(id) { state.expenseLog = state.expenseLog.filter(i => i.id !== id); saveState(); }
+        function toggleSection(id) { document.getElementById(id).classList.toggle('hidden'); }
 
         window.onload = init;
     </script>
